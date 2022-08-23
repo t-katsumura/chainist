@@ -12,12 +12,16 @@ import (
 
 func test1(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("t1"))
+	if _, err := w.Write([]byte("t1")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func test2(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("t2"))
+	if _, err := w.Write([]byte("t2")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func TestHandlerFuncWrapper(t *testing.T) {

@@ -12,25 +12,33 @@ import (
 
 func handlerFunc1(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("f1"))
+	if _, err := w.Write([]byte("f1")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func handlerFunc2(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("f2"))
+	if _, err := w.Write([]byte("f2")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 var handler1 = &HandlerFuncWrapper{
 	f: func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("h1"))
+		if _, err := w.Write([]byte("h1")); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	},
 }
 
 var handler2 = &HandlerFuncWrapper{
 	f: func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("h2"))
+		if _, err := w.Write([]byte("h2")); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	},
 }
 
