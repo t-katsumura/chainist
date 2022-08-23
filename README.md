@@ -9,6 +9,8 @@
 
 `chainist` is a simple go library to create a http handler chain. This is also known as middleware.
 
+**Underlying Concepts**
+![concepts.png](/docs/images/concepts.png)
 
 ## Installation
 
