@@ -32,7 +32,7 @@ func (c *Chain) Append(f middleware) *Chain {
 }
 
 // Append http handler function as pre-executable function
-// which is executed before calling successing middlewares.
+// which is executed before calling succeeding middlewares.
 func (c *Chain) AppendPreFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
@@ -42,7 +42,7 @@ func (c *Chain) AppendPreFunc(f http.HandlerFunc) *Chain {
 }
 
 // Append http handler function as post-executable function
-// which is executed after calling successing middlewares.
+// which is executed after calling succeeding middlewares.
 func (c *Chain) AppendPostFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
