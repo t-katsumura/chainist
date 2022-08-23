@@ -41,7 +41,7 @@ chain.Extend(handler1, handler2)
 ```
 
 add http handlerFunc, i.e. `func(w http.ResponseWriter, r *http.Request)`, to the chain.  
-Here, 'Pre' means the handlerFuncs will be executed before calling successing handlers or handlerFuncs. And 'Post' means the handlerFuncs will be executed after calling successing handlers or handlerFuncs.
+Here, 'Pre' means the handlerFuncs will be executed before calling succeeding handlers or handlerFuncs. And 'Post' means the handlerFuncs will be executed after calling succeeding handlers or handlerFuncs.
 
 ```go
 // add handlerFuncss one by one
@@ -63,11 +63,11 @@ chain.AppendPostFunc(handlerFunc1).AppendPostFunc(handlerFunc2)
 chain.ExtendPostFunc(handlerFunc1, handlerFunc2)
 ```
 
-get the http.Handler
+get the handler chain which types of http.Handler
 
 ```go
 chain.Chain()
-// or with handlerFunc
+// or with handlerFunc for the edghe of chain
 chain.ChainFunc(handlerFunc)
 ```
 
@@ -111,10 +111,10 @@ func handler2(next http.Handler) http.Handler {
 
 func main() {
 
-    // create a new chain struct
+    // create a new chain
     chain := chainist.NewChain()
 
-    // add handler functions
+    // add handlerFuncs
     chain.AppendPreFunc(handlerFunc1)
     chain.AppendPostFunc(handlerFunc2)
     // add handlers
