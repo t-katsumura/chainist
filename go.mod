@@ -1,4 +1,4 @@
-module chainist
+module github.com/t-katsumura/chainist
 
 go 1.18
 
