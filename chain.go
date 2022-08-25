@@ -8,7 +8,7 @@ import (
 type middleware func(h http.Handler) http.Handler
 
 type Chain struct {
-	// fs : middlewares
+	// fs : middleware
 	fs []middleware
 	// f : handler function run at the edge of the chain
 	f http.HandlerFunc
@@ -32,23 +32,23 @@ func (c *Chain) Append(f middleware) *Chain {
 }
 
 // Append http handler function as pre-executable function
-// which is executed before calling succeeding middlewares.
+// which is executed before calling succeeding middleware.
 func (c *Chain) AppendPreFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
 	h := &HandlerFuncWrapper{f: f}
-	return c.Append(h.preMiddleware)
+	return c.Append(h.PreMiddleware)
 }
 
 // Append http handler function as post-executable function
-// which is executed after calling succeeding middlewares.
+// which is executed after calling succeeding middleware.
 func (c *Chain) AppendPostFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
 	h := &HandlerFuncWrapper{f: f}
-	return c.Append(h.postMiddleware)
+	return c.Append(h.PostMiddleware)
 }
 
 // Insert a middleware at designated number of chain
@@ -74,7 +74,7 @@ func (c *Chain) InsertPreFunc(f http.HandlerFunc, i int) *Chain {
 		return c
 	}
 	h := &HandlerFuncWrapper{f: f}
-	return c.Insert(h.preMiddleware, i)
+	return c.Insert(h.PreMiddleware, i)
 }
 
 // Insert a post-executable handler function at designated number of chain
@@ -83,10 +83,10 @@ func (c *Chain) InsertPostFunc(f http.HandlerFunc, i int) *Chain {
 		return c
 	}
 	h := &HandlerFuncWrapper{f: f}
-	return c.Insert(h.postMiddleware, i)
+	return c.Insert(h.PostMiddleware, i)
 }
 
-// append multiple middlewares at a time
+// append multiple middleware at a time
 func (c *Chain) Extend(fs ...middleware) *Chain {
 	for _, f := range fs {
 		if f == nil {
@@ -104,7 +104,7 @@ func (c *Chain) ExtendPreFunc(fs ...http.HandlerFunc) *Chain {
 			continue
 		}
 		h := &HandlerFuncWrapper{f: f}
-		c.Append(h.preMiddleware)
+		c.Append(h.PreMiddleware)
 	}
 	return c
 }
@@ -116,7 +116,7 @@ func (c *Chain) ExtendPostFunc(fs ...http.HandlerFunc) *Chain {
 			continue
 		}
 		h := &HandlerFuncWrapper{f: f}
-		c.Append(h.postMiddleware)
+		c.Append(h.PostMiddleware)
 	}
 	return c
 }
@@ -144,14 +144,14 @@ func (c *Chain) Len() int {
 	return len(c.fs)
 }
 
-// return the new middeware chain
+// return the new middleware chain
 func (c *Chain) Chain() http.Handler {
 
 	var h http.Handler
 	if c.f != nil {
 		h = c.f
 	} else {
-		h = (&HandlerFuncWrapper{f: c.f}).middleware(nil)
+		h = (&HandlerFuncWrapper{}).Middleware(nil)
 	}
 
 	n := c.Len()
@@ -162,10 +162,10 @@ func (c *Chain) Chain() http.Handler {
 	return h
 }
 
-// return the new middeware chain
-func (c *Chain) ChainFunc(h http.HandlerFunc) http.Handler {
-	if h != nil {
-		c.f = h
+// return the new middleware chain
+func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
+	if f != nil {
+		c.f = f
 	}
 	return c.Chain()
 }

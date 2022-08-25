@@ -63,7 +63,7 @@ chain.AppendPostFunc(handlerFunc1).AppendPostFunc(handlerFunc2)
 chain.ExtendPostFunc(handlerFunc1, handlerFunc2)
 ```
 
-get the handler chain which types of http.Handler
+get the handler chain which type is http.Handler
 
 ```go
 chain.Chain()
@@ -85,16 +85,19 @@ import (
     "github.com/t-katsumura/chainist"
 )
 
+// sample http handlerFunc
 func handlerFunc1(w http.ResponseWriter, _ *http.Request) {
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("Hi from handlerFunc 1!\n"))
 }
 
+// sample http handlerFunc
 func handlerFunc2(w http.ResponseWriter, _ *http.Request) {
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("Hi from handlerFunc 2!\n"))
 }
 
+// sample http handler
 func handler1(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte("Hi from handler 1!\n"))
@@ -102,6 +105,7 @@ func handler1(next http.Handler) http.Handler {
     })
 }
 
+// sample http handler
 func handler2(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte("Hi from handler 2!\n"))
@@ -122,10 +126,10 @@ func main() {
 
     // Run http server which responds
     /*
-       Hi from handlerFunc 1!
-       Hi from handlerFunc 2!
-       Hi from handler 1!
-       Hi from handler 2!
+        Hi from handlerFunc 1!
+        Hi from handler 1!
+        Hi from handler 2!
+        Hi from handlerFunc 2!
     */
     http.Handle("/", chain.Chain())
     http.ListenAndServe(":8080", nil)

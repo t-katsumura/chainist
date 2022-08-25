@@ -43,7 +43,7 @@ func TestPreMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: nil,
 		}
-		s := httptest.NewServer(h.preMiddleware(http.HandlerFunc(test1)))
+		s := httptest.NewServer(h.PreMiddleware(http.HandlerFunc(test1)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -60,7 +60,7 @@ func TestPreMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.preMiddleware(nil))
+		s := httptest.NewServer(h.PreMiddleware(nil))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -77,7 +77,7 @@ func TestPreMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: nil,
 		}
-		s := httptest.NewServer(h.preMiddleware(http.HandlerFunc(nil)))
+		s := httptest.NewServer(h.PreMiddleware(http.HandlerFunc(nil)))
 		defer s.Close()
 
 		_, err := http.Get(s.URL)
@@ -87,7 +87,7 @@ func TestPreMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.preMiddleware(http.HandlerFunc(test2)))
+		s := httptest.NewServer(h.PreMiddleware(http.HandlerFunc(test2)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -107,7 +107,7 @@ func TestPostMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: nil,
 		}
-		s := httptest.NewServer(h.postMiddleware(http.HandlerFunc(test1)))
+		s := httptest.NewServer(h.PostMiddleware(http.HandlerFunc(test1)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -124,7 +124,7 @@ func TestPostMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.postMiddleware(nil))
+		s := httptest.NewServer(h.PostMiddleware(nil))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -141,7 +141,7 @@ func TestPostMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: nil,
 		}
-		s := httptest.NewServer(h.postMiddleware(http.HandlerFunc(nil)))
+		s := httptest.NewServer(h.PostMiddleware(http.HandlerFunc(nil)))
 		defer s.Close()
 
 		_, err := http.Get(s.URL)
@@ -151,7 +151,7 @@ func TestPostMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.postMiddleware(http.HandlerFunc(test2)))
+		s := httptest.NewServer(h.PostMiddleware(http.HandlerFunc(test2)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -171,7 +171,7 @@ func TestMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.middleware(nil))
+		s := httptest.NewServer(h.Middleware(nil))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -188,7 +188,7 @@ func TestMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: nil,
 		}
-		s := httptest.NewServer(h.middleware(http.HandlerFunc(test1)))
+		s := httptest.NewServer(h.Middleware(http.HandlerFunc(test1)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
@@ -205,7 +205,7 @@ func TestMiddleware(t *testing.T) {
 		h := &HandlerFuncWrapper{
 			f: test1,
 		}
-		s := httptest.NewServer(h.middleware(http.HandlerFunc(test2)))
+		s := httptest.NewServer(h.Middleware(http.HandlerFunc(test2)))
 		defer s.Close()
 
 		res, err := http.Get(s.URL)
