@@ -52,13 +52,13 @@ jobs:
           # skip-build-cache: true
 
       - name: Test
-        run: go test -v -cover -covermode=atomic -coverprofile=coverage.txt ./...
+        run: go test -v -cover -covermode=atomic -coverprofile=coverage.xml ./...
 
       - name: Codecov
         uses: codecov/codecov-action@v3
         with:
           flags: unittests
-          files: coverage.txt
+          files: coverage.xml
           fail_ci_if_error: true
           verbose: true
 

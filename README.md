@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/t-katsumura/chainist)](https://goreportcard.com/report/github.com/t-katsumura/chainist)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Test](https://github.com/t-katsumura/chainist/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/t-katsumura/chainist/actions/workflows/test.yml?query=branch%3Amain)
-[![Codecov](https://codecov.io/gh/t-katsumura/chainist/branch/main/graph/badge.svg?token=P5J4J1F6RN)](https://codecov.io/gh/t-katsumura/chainist)
+[![Codecov](https://codecov.io/gh/t-katsumura/chainist/branch/main/graph/badge.svg?token=3ZRzIQTXIw)](https://codecov.io/gh/t-katsumura/chainist)
 
 `chainist` is a simple go library to create a http handler chain. This is also known as middleware.
 
