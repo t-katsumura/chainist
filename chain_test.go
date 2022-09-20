@@ -445,8 +445,8 @@ func TestChain(t *testing.T) {
 		defer res.Body.Close()
 		assert.NoError(t, err)
 
-		assert.Equal(t, 200, res.StatusCode)
-		assert.Equal(t, "", string(body))
+		assert.Equal(t, 404, res.StatusCode)
+		assert.NotEmpty(t, body)
 	}
 	{
 		c := NewChain().Append(handler1.Middleware)
@@ -523,8 +523,8 @@ func TestChainFunc(t *testing.T) {
 		defer res.Body.Close()
 		assert.NoError(t, err)
 
-		assert.Equal(t, 200, res.StatusCode)
-		assert.Equal(t, "", string(body))
+		assert.Equal(t, 404, res.StatusCode)
+		assert.NotEmpty(t, body)
 	}
 	{
 		c := NewChain()

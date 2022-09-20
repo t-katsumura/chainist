@@ -6,7 +6,6 @@
 [![Test](https://github.com/t-katsumura/chainist/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/t-katsumura/chainist/actions/workflows/test.yml?query=branch%3Amain)
 [![Codecov](https://codecov.io/gh/t-katsumura/chainist/branch/main/graph/badge.svg?token=P5J4J1F6RN)](https://codecov.io/gh/t-katsumura/chainist)
 
-
 `chainist` is a simple go library to create a http handler chain. This is also known as middleware.
 
 **Underlying Concepts**
@@ -34,7 +33,7 @@ add http handler, i.e. `func(next http.Handler) http.Handler`, to the chain.
 // add handlers one by one
 chain.Append(handler1)
 chain.Append(handler2)
-// add handlers using method chaining 
+// add handlers using method chaining
 chain.Append(handler1).Append(handler2)
 // add handlers at a time
 chain.Extend(handler1, handler2)
@@ -47,7 +46,7 @@ Here, 'Pre' means the handlerFuncs will be executed before calling succeeding ha
 // add handlerFuncss one by one
 chain.AppendPreFunc(handlerFunc1)
 chain.AppendPreFunc(handlerFunc2)
-// add handlerFuncs using method chaining 
+// add handlerFuncs using method chaining
 chain.AppendPreFunc(handlerFunc1).AppendPreFunc(handlerFunc2)
 // add handlerFuncs at a time
 chain.ExtendPreFunc(handlerFunc1, handlerFunc2)
@@ -57,7 +56,7 @@ chain.ExtendPreFunc(handlerFunc1, handlerFunc2)
 // add handlerFuncs one by one
 chain.AppendPostFunc(handlerFunc1)
 chain.AppendPostFunc(handlerFunc2)
-// add handlerFuncs using method chaining 
+// add handlerFuncs using method chaining
 chain.AppendPostFunc(handlerFunc1).AppendPostFunc(handlerFunc2)
 // add handlerFuncs at a time
 chain.ExtendPostFunc(handlerFunc1, handlerFunc2)
@@ -131,15 +130,16 @@ func main() {
         Hi from handler 2!
         Hi from handlerFunc 2!
     */
-    http.Handle("/", chain.Chain())
-    http.ListenAndServe(":8080", nil)
+    http.ListenAndServe(":8080", chain.Chain())
 }
 ```
 
 ## Questions and support
+
 All bug reports, questions and suggestions should go though Github Issues.
 
 ## Contributing
+
 1. Fork it
 1. Create feature branch (`git checkout -b feature/new-feature`)
 1. Write codes on feature branch
@@ -148,6 +148,12 @@ All bug reports, questions and suggestions should go though Github Issues.
 1. Create new Pull Request on Github
 
 ## Development
+
 - Write codes
-- `go fmt -x  ./...` - format codes
+- `go fmt -x ./...` - format codes
 - `go test -v -cover ./...` - run test and the coverage should always be 100%
+
+When generating coverage report, run
+
+1. `go test -cover ./... -coverprofile=cover.out`
+2. `go tool cover -html=cover.out -o cover.html`
