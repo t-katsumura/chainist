@@ -73,6 +73,10 @@ func TestNewChain(t *testing.T) {
 		assert.Nil(t, c.f)
 	}
 	{
+		c := NewChain(nil)
+		assert.Nil(t, c)
+	}
+	{
 		c := NewChain(handler1.Middleware)
 		assert.Equal(t, 1, len(c.fs))
 		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
