@@ -6,9 +6,10 @@
 [![Test](https://github.com/t-katsumura/chainist/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/t-katsumura/chainist/actions/workflows/test.yml?query=branch%3Amain)
 [![Codecov](https://codecov.io/gh/t-katsumura/chainist/branch/main/graph/badge.svg?token=3ZRzIQTXIw)](https://codecov.io/gh/t-katsumura/chainist)
 
-`chainist` is a simple go library to create a http handler chain. This is also known as middleware.
+`chainist` is a simple http handler, or middleware, chaining library for golang.
 
 **Underlying Concepts**
+
 ![concepts.png](/docs/images/concepts.png)
 
 ## Installation
@@ -19,7 +20,8 @@ go get github.com/t-katsumura/chainist@latest
 
 ## Basic Usage
 
-create new chain. http handlers can be added at this time.
+Create a new chain.  
+Http handlers or middleware can be added this time.
 
 ```go
 chain := chainist.NewChain()
@@ -27,27 +29,31 @@ chain := chainist.NewChain()
 chain := chainist.NewChain(handler1, handler2)
 ```
 
-add http handler, i.e. `func(next http.Handler) http.Handler`, to the chain.
+Add http handlers, i.e. `func(next http.Handler) http.Handler`, to the chain.
 
 ```go
 // add handlers one by one
 chain.Append(handler1)
 chain.Append(handler2)
+
 // add handlers using method chaining
 chain.Append(handler1).Append(handler2)
+
 // add handlers at a time
 chain.Extend(handler1, handler2)
 ```
 
-add http handlerFunc, i.e. `func(w http.ResponseWriter, r *http.Request)`, to the chain.  
-Here, 'Pre' means the handlerFuncs will be executed before calling succeeding handlers or handlerFuncs. And 'Post' means the handlerFuncs will be executed after calling succeeding handlers or handlerFuncs.
+Add http handler function, i.e. `func(w http.ResponseWriter, r *http.Request)`, to the chain.  
+Here, 'Pre' means the functions will be executed before calling succeeding handlers. 'Post' means the functions will be executed after calling succeeding handlers.
 
 ```go
 // add handlerFuncss one by one
 chain.AppendPreFunc(handlerFunc1)
 chain.AppendPreFunc(handlerFunc2)
+
 // add handlerFuncs using method chaining
 chain.AppendPreFunc(handlerFunc1).AppendPreFunc(handlerFunc2)
+
 // add handlerFuncs at a time
 chain.ExtendPreFunc(handlerFunc1, handlerFunc2)
 ```
@@ -56,17 +62,20 @@ chain.ExtendPreFunc(handlerFunc1, handlerFunc2)
 // add handlerFuncs one by one
 chain.AppendPostFunc(handlerFunc1)
 chain.AppendPostFunc(handlerFunc2)
+
 // add handlerFuncs using method chaining
 chain.AppendPostFunc(handlerFunc1).AppendPostFunc(handlerFunc2)
+
 // add handlerFuncs at a time
 chain.ExtendPostFunc(handlerFunc1, handlerFunc2)
 ```
 
-get the handler chain which type is http.Handler
+Get the handler chain which type is http.Handler.
 
 ```go
 chain.Chain()
-// or with handlerFunc for the edghe of chain
+
+// or with handler function
 chain.ChainFunc(handlerFunc)
 ```
 
@@ -117,9 +126,10 @@ func main() {
     // create a new chain
     chain := chainist.NewChain()
 
-    // add handlerFuncs
+    // add handler functions
     chain.AppendPreFunc(handlerFunc1)
     chain.AppendPostFunc(handlerFunc2)
+
     // add handlers
     chain.Extend(handler1, handler2)
 
@@ -157,3 +167,8 @@ When generating coverage report, run
 
 1. `go test -cover ./... -coverprofile=cover.out`
 2. `go tool cover -html=cover.out -o cover.html`
+
+## Similar packages
+
+[alice](https://github.com/justinas/alice) is a famous middleware chaining library.
+This project is inspired by [alice](https://github.com/justinas/alice).
