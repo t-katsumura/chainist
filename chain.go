@@ -20,7 +20,7 @@ An example of basic definition of middleware is
         })
     }
 */
-type middleware func(h http.Handler) http.Handler
+type Middleware func(h http.Handler) http.Handler
 
 /*
 Chain is the struct for middleware chain.
@@ -31,12 +31,12 @@ type Chain struct {
 	// Middleware is the list of middleware.
 	// This can contain nil values but they are ignored
 	// when getting middleware chains with Chain() or ChainFunc().
-	fs []middleware
+	Middleware []Middleware
 
 	// HandlerFunc is the http handler function at the edge of the chain.
 	// If it is not set before calling Chain() or ChainFunc(),
 	// an empty handler function is automatically used.
-	f http.HandlerFunc
+	HandlerFunc http.HandlerFunc
 }
 
 /*
@@ -51,15 +51,15 @@ If nil is contained in the given arguments, nil is returned.
     // handler1 is called at first, and handler3 at last
     chain := chainist.NewChain(handler1, handler2, handler3)
 */
-func NewChain(fs ...middleware) *Chain {
-	for _, f := range fs {
-		if f == nil {
+func NewChain(ms ...Middleware) *Chain {
+	for _, m := range ms {
+		if m == nil {
 			// it might be better to return an error
 			return nil
 		}
 	}
 	c := &Chain{
-		fs: fs,
+		Middleware: ms,
 	}
 	return c
 }
@@ -73,11 +73,11 @@ If nil is given, then the chain will be returned without adding it.
          .Append(handler2)
          .Append(handler3)
 */
-func (c *Chain) Append(f middleware) *Chain {
-	if f == nil {
+func (c *Chain) Append(m Middleware) *Chain {
+	if m == nil {
 		return c
 	}
-	c.fs = append(c.fs, f)
+	c.Middleware = append(c.Middleware, m)
 	return c
 }
 
@@ -110,7 +110,7 @@ func (c *Chain) AppendPreFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Append(h.PreMiddleware)
 }
 
@@ -142,7 +142,7 @@ func (c *Chain) AppendPostFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Append(h.PostMiddleware)
 }
 
@@ -167,18 +167,18 @@ Usage:
 	// chain.Middleware[0] will be handler4
     chain.Insert(handler5, 0)
 */
-func (c *Chain) Insert(f middleware, i int) *Chain {
-	if f == nil {
+func (c *Chain) Insert(m Middleware, i int) *Chain {
+	if m == nil {
 		return c
 	}
-	if len(c.fs) == 0 || i >= len(c.fs) {
-		c.fs = append(c.fs, f)
+	if len(c.Middleware) == 0 || i >= len(c.Middleware) {
+		c.Middleware = append(c.Middleware, m)
 	} else {
 		if i < 0 {
 			i = 0
 		}
-		c.fs = append(c.fs[:i+1], c.fs[i:]...)
-		c.fs[i] = f
+		c.Middleware = append(c.Middleware[:i+1], c.Middleware[i:]...)
+		c.Middleware[i] = m
 	}
 	return c
 }
@@ -206,7 +206,7 @@ func (c *Chain) InsertPreFunc(f http.HandlerFunc, i int) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Insert(h.PreMiddleware, i)
 }
 
@@ -233,7 +233,7 @@ func (c *Chain) InsertPostFunc(f http.HandlerFunc, i int) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Insert(h.PostMiddleware, i)
 }
 
@@ -249,12 +249,12 @@ If nil is contained in the arguments, they are ignored.
 	// chain will have handler1,handler2,handler3,handler4 with this order
     chain.Extend(handler3, handler4)
 */
-func (c *Chain) Extend(fs ...middleware) *Chain {
-	for _, f := range fs {
-		if f == nil {
+func (c *Chain) Extend(ms ...Middleware) *Chain {
+	for _, m := range ms {
+		if m == nil {
 			continue
 		}
-		c.Append(f)
+		c.Append(m)
 	}
 	return c
 }
@@ -276,7 +276,7 @@ func (c *Chain) ExtendPreFunc(fs ...http.HandlerFunc) *Chain {
 		if f == nil {
 			continue
 		}
-		h := &HandlerFuncWrapper{f: f}
+		h := &HandlerFuncWrapper{HandlerFunc: f}
 		c.Append(h.PreMiddleware)
 	}
 	return c
@@ -299,7 +299,7 @@ func (c *Chain) ExtendPostFunc(fs ...http.HandlerFunc) *Chain {
 		if f == nil {
 			continue
 		}
-		h := &HandlerFuncWrapper{f: f}
+		h := &HandlerFuncWrapper{HandlerFunc: f}
 		c.Append(h.PostMiddleware)
 	}
 	return c
@@ -319,7 +319,7 @@ func (c *Chain) SetHandlerFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	c.f = f
+	c.HandlerFunc = f
 	return c
 }
 
@@ -339,7 +339,7 @@ func (c *Chain) Join(o *Chain) *Chain {
 	if o == nil {
 		return c
 	}
-	c.fs = append(c.fs, o.fs...)
+	c.Middleware = append(c.Middleware, o.Middleware...)
 	return c
 }
 
@@ -354,8 +354,8 @@ This contains the length of Middleware and the Handler Function if it's already 
     println(chain.len())
 */
 func (c *Chain) Len() int {
-	length := len(c.fs)
-	if c.f != nil {
+	length := len(c.Middleware)
+	if c.HandlerFunc != nil {
 		length += 1
 	}
 	return length
@@ -393,13 +393,13 @@ func (c *Chain) Chain() http.Handler {
 	}
 
 	var h http.Handler
-	if c.f != nil {
-		c.Append((&HandlerFuncWrapper{f: c.f}).Middleware)
+	if c.HandlerFunc != nil {
+		c.Append((&HandlerFuncWrapper{HandlerFunc: c.HandlerFunc}).Middleware)
 	}
 
-	h = c.fs[n-1](nil)
-	for i := range c.fs[:n-1] {
-		h = c.fs[n-2-i](h)
+	h = c.Middleware[n-1](nil)
+	for i := range c.Middleware[:n-1] {
+		h = c.Middleware[n-2-i](h)
 	}
 
 	return h
@@ -428,7 +428,7 @@ Usage:
 */
 func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
 	if f != nil {
-		c.f = f
+		c.HandlerFunc = f
 	}
 	return c.Chain()
 }

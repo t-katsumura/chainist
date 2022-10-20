@@ -25,7 +25,7 @@ func handlerFunc2(w http.ResponseWriter, _ *http.Request) {
 }
 
 var handler1 = &HandlerFuncWrapper{
-	f: func(w http.ResponseWriter, _ *http.Request) {
+	HandlerFunc: func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("h1")); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -34,7 +34,7 @@ var handler1 = &HandlerFuncWrapper{
 }
 
 var handler2 = &HandlerFuncWrapper{
-	f: func(w http.ResponseWriter, _ *http.Request) {
+	HandlerFunc: func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("h2")); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -50,27 +50,27 @@ func TestChainStruct(t *testing.T) {
 	{
 		c := &Chain{}
 		e := &Chain{
-			fs: nil,
-			f:  nil,
+			Middleware:  nil,
+			HandlerFunc: nil,
 		}
 		assert.Equal(t, e, c)
 	}
 	{
 		c := &Chain{
-			fs: []middleware{handler1.PreMiddleware},
-			f:  handler2.f,
+			Middleware:  []Middleware{handler1.PreMiddleware},
+			HandlerFunc: handler2.HandlerFunc,
 		}
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.PreMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.f), funcPointer(c.f))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.PreMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.HandlerFunc), funcPointer(c.HandlerFunc))
 	}
 }
 
 func TestNewChain(t *testing.T) {
 	{
 		c := NewChain()
-		assert.Equal(t, 0, len(c.fs))
-		assert.Nil(t, c.f)
+		assert.Equal(t, 0, len(c.Middleware))
+		assert.Nil(t, c.HandlerFunc)
 	}
 	{
 		c := NewChain(nil)
@@ -78,16 +78,16 @@ func TestNewChain(t *testing.T) {
 	}
 	{
 		c := NewChain(handler1.Middleware)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Nil(t, c.f)
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Nil(t, c.HandlerFunc)
 	}
 	{
 		c := NewChain(handler1.Middleware, handler2.Middleware)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[1]))
-		assert.Nil(t, c.f)
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[1]))
+		assert.Nil(t, c.HandlerFunc)
 	}
 }
 
@@ -95,21 +95,21 @@ func TestAppend(t *testing.T) {
 	{
 		c := NewChain()
 		c.Append(nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.Append(handler1.Middleware)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.Append(handler1.Middleware)
 		c.Append(handler2.Middleware)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[1]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -117,24 +117,24 @@ func TestAppendPreFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.AppendPreFunc(nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.AppendPreFunc(handlerFunc1)
-		e := &HandlerFuncWrapper{f: handlerFunc1}
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e.PreMiddleware), funcPointer(c.fs[0]))
+		e := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e.PreMiddleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.AppendPreFunc(handlerFunc1)
 		c.AppendPreFunc(handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -142,24 +142,24 @@ func TestAppendPostFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.AppendPostFunc(nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.AppendPostFunc(handlerFunc1)
-		e := &HandlerFuncWrapper{f: handlerFunc1}
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e.PostMiddleware), funcPointer(c.fs[0]))
+		e := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e.PostMiddleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.AppendPostFunc(handlerFunc1)
 		c.AppendPostFunc(handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -167,45 +167,45 @@ func TestInsert(t *testing.T) {
 	{
 		c := NewChain()
 		c.Insert(nil, 0)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.Insert(handler1.Middleware, 0)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.Insert(handler1.Middleware, -99)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain().Append(handler2.Middleware)
 		c.Insert(handler1.Middleware, -99)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.Insert(handler1.Middleware, 99)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain().Append(handler2.Middleware)
 		c.Insert(handler1.Middleware, 99)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.Insert(handler1.Middleware, 0)
 		c.Insert(handler2.Middleware, 1)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[1]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -213,38 +213,38 @@ func TestInsertPreFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.InsertPreFunc(nil, 0)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.InsertPreFunc(handlerFunc1, 0)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PreMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PreMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPreFunc(handlerFunc1, -99)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PreMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PreMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPreFunc(handlerFunc1, 99)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PreMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PreMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPreFunc(handlerFunc1, 0)
 		c.InsertPreFunc(handlerFunc2, 0)
-		e1 := (&HandlerFuncWrapper{f: handlerFunc1}).PreMiddleware
-		e2 := (&HandlerFuncWrapper{f: handlerFunc2}).PreMiddleware
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2), funcPointer(c.fs[1]))
+		e1 := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PreMiddleware
+		e2 := (&HandlerFuncWrapper{HandlerFunc: handlerFunc2}).PreMiddleware
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -252,38 +252,38 @@ func TestInsertPostFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.InsertPostFunc(nil, 0)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.InsertPostFunc(handlerFunc1, 0)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PostMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PostMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPostFunc(handlerFunc1, -99)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PostMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PostMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPostFunc(handlerFunc1, 99)
-		e := (&HandlerFuncWrapper{f: handlerFunc1}).PostMiddleware
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e), funcPointer(c.fs[0]))
+		e := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PostMiddleware
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.InsertPostFunc(handlerFunc1, 0)
 		c.InsertPostFunc(handlerFunc2, 0)
-		e1 := (&HandlerFuncWrapper{f: handlerFunc1}).PostMiddleware
-		e2 := (&HandlerFuncWrapper{f: handlerFunc2}).PostMiddleware
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2), funcPointer(c.fs[1]))
+		e1 := (&HandlerFuncWrapper{HandlerFunc: handlerFunc1}).PostMiddleware
+		e2 := (&HandlerFuncWrapper{HandlerFunc: handlerFunc2}).PostMiddleware
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -291,28 +291,28 @@ func TestExtend(t *testing.T) {
 	{
 		c := NewChain()
 		c.Extend(nil, nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.Extend(handler1.Middleware)
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.Extend(handler1.Middleware)
 		c.Extend(handler2.Middleware)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[1]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[1]))
 	}
 	{
 		c := NewChain()
 		c.Extend(handler1.Middleware, handler2.Middleware)
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.fs[1]))
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -320,33 +320,33 @@ func TestExtendPreFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.ExtendPreFunc(nil, nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.ExtendPreFunc(handlerFunc1)
-		e := &HandlerFuncWrapper{f: handlerFunc1}
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e.PreMiddleware), funcPointer(c.fs[0]))
+		e := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e.PreMiddleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.ExtendPreFunc(handlerFunc1)
 		c.ExtendPreFunc(handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.Middleware[1]))
 	}
 	{
 		c := NewChain()
 		c.ExtendPreFunc(handlerFunc1, handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PreMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PreMiddleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -354,33 +354,33 @@ func TestExtendPostFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.ExtendPostFunc(nil, nil)
-		assert.Equal(t, 0, len(c.fs))
+		assert.Equal(t, 0, len(c.Middleware))
 	}
 	{
 		c := NewChain()
 		c.ExtendPostFunc(handlerFunc1)
-		e := &HandlerFuncWrapper{f: handlerFunc1}
-		assert.Equal(t, 1, len(c.fs))
-		assert.Equal(t, funcPointer(e.PostMiddleware), funcPointer(c.fs[0]))
+		e := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		assert.Equal(t, 1, len(c.Middleware))
+		assert.Equal(t, funcPointer(e.PostMiddleware), funcPointer(c.Middleware[0]))
 	}
 	{
 		c := NewChain()
 		c.ExtendPostFunc(handlerFunc1)
 		c.ExtendPostFunc(handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.Middleware[1]))
 	}
 	{
 		c := NewChain()
 		c.ExtendPostFunc(handlerFunc1, handlerFunc2)
-		e1 := &HandlerFuncWrapper{f: handlerFunc1}
-		e2 := &HandlerFuncWrapper{f: handlerFunc2}
-		assert.Equal(t, 2, len(c.fs))
-		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.fs[0]))
-		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.fs[1]))
+		e1 := &HandlerFuncWrapper{HandlerFunc: handlerFunc1}
+		e2 := &HandlerFuncWrapper{HandlerFunc: handlerFunc2}
+		assert.Equal(t, 2, len(c.Middleware))
+		assert.Equal(t, funcPointer(e1.PostMiddleware), funcPointer(c.Middleware[0]))
+		assert.Equal(t, funcPointer(e2.PostMiddleware), funcPointer(c.Middleware[1]))
 	}
 }
 
@@ -388,12 +388,12 @@ func TestSetHandlerFunc(t *testing.T) {
 	{
 		c := NewChain()
 		c.SetHandlerFunc(nil)
-		assert.Nil(t, c.f)
+		assert.Nil(t, c.HandlerFunc)
 	}
 	{
 		c := NewChain()
 		c.SetHandlerFunc(handlerFunc1)
-		assert.Equal(t, funcPointer(handlerFunc1), funcPointer(c.f))
+		assert.Equal(t, funcPointer(handlerFunc1), funcPointer(c.HandlerFunc))
 	}
 }
 
@@ -401,27 +401,27 @@ func TestJoin(t *testing.T) {
 	{
 		c1 := NewChain()
 		c1.Join(nil)
-		assert.Equal(t, 0, len(c1.fs))
+		assert.Equal(t, 0, len(c1.Middleware))
 	}
 	{
 		c1 := NewChain()
 		c2 := NewChain()
 		c1.Join(c2)
-		assert.Equal(t, 0, len(c1.fs))
+		assert.Equal(t, 0, len(c1.Middleware))
 	}
 	{
 		c1 := NewChain().Append(handler1.Middleware)
 		c1.Join(nil)
-		assert.Equal(t, 1, len(c1.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c1.fs[0]))
+		assert.Equal(t, 1, len(c1.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c1.Middleware[0]))
 	}
 	{
 		c1 := NewChain().Append(handler1.Middleware)
 		c2 := NewChain().Append(handler2.Middleware)
 		c1.Join(c2)
-		assert.Equal(t, 2, len(c1.fs))
-		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c1.fs[0]))
-		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c1.fs[1]))
+		assert.Equal(t, 2, len(c1.Middleware))
+		assert.Equal(t, funcPointer(handler1.Middleware), funcPointer(c1.Middleware[0]))
+		assert.Equal(t, funcPointer(handler2.Middleware), funcPointer(c1.Middleware[1]))
 	}
 }
 
