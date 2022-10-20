@@ -34,7 +34,7 @@ func (h *HandlerFuncWrapper) PostMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// Same as `PreMiddleware`
+// Alias for `PreMiddleware`
 func (h *HandlerFuncWrapper) Middleware(next http.Handler) http.Handler {
 	return h.PreMiddleware(next)
 }
