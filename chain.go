@@ -92,7 +92,7 @@ If you pass `YourPreHandlerFunc(w http.ResponseWriter, r *http.Request)` as an a
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             YourPreHandlerFunc(w, r)
             if next != nil {
-				// invoke the next handler function after YourPreHandlerFunc
+                // invoke the next handler function after YourPreHandlerFunc
                 next.ServeHTTP(w, r)
             }
         })
@@ -124,7 +124,7 @@ If you pass `YourPostHandlerFunc(w http.ResponseWriter, r *http.Request)` as an 
     func handler(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             if next != nil {
-				// invoke the next handler function before YourPostHandlerFunc
+                // invoke the next handler function before YourPostHandlerFunc
                 next.ServeHTTP(w, r)
             }
             YourPostHandlerFunc(w, r)
@@ -160,11 +160,11 @@ Usage:
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handler4 between handler1 and handler2
-	// chain.Middleware[1] will be handler4
+    // chain.Middleware[1] will be handler4
     chain.Insert(handler4, 1)
 
     // insert handler5 at the first of the chain
-	// chain.Middleware[0] will be handler4
+    // chain.Middleware[0] will be handler4
     chain.Insert(handler5, 0)
 */
 func (c *Chain) Insert(m Middleware, i int) *Chain {
@@ -195,11 +195,11 @@ If the number grater than the length of middleware is given as the position, the
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handlerFunc4 between handler1 and handler2
-	// chain.Middleware[1] will be a middleware created with handlerFunc4
+    // chain.Middleware[1] will be a middleware created with handlerFunc4
     chain.InsertPreFunc(handlerFunc4, 1)
 
     // insert handlerFunc5 at the first of the chain
-	// chain.Middleware[0] will be a middleware created with handlerFunc5
+    // chain.Middleware[0] will be a middleware created with handlerFunc5
     chain.InsertPreFunc(handlerFunc5, 0)
 */
 func (c *Chain) InsertPreFunc(f http.HandlerFunc, i int) *Chain {
@@ -222,11 +222,11 @@ If the number grater than the length of middleware is given as the position, the
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handlerFunc4 between handler1 and handler2
-	// chain.Middleware[1] will be a middleware created with handlerFunc4
+    // chain.Middleware[1] will be a middleware created with handlerFunc4
     chain.InsertPostFunc(handlerFunc4, 1)
 
     // insert handlerFunc5 at the first of the chain
-	// chain.Middleware[0] will be a middleware created with handlerFunc5
+    // chain.Middleware[0] will be a middleware created with handlerFunc5
     chain.InsertPostFunc(handlerFunc5, 0)
 */
 func (c *Chain) InsertPostFunc(f http.HandlerFunc, i int) *Chain {
@@ -246,7 +246,7 @@ If nil is contained in the arguments, they are ignored.
     chain := chainist.NewChain(handler1, handler2)
 
     // append handler3 and handler4 with this order
-	// chain will have handler1,handler2,handler3,handler4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.Extend(handler3, handler4)
 */
 func (c *Chain) Extend(ms ...Middleware) *Chain {
@@ -268,7 +268,7 @@ nil is ignored if contained in the arguments.
     chain := chainist.NewChain(handler1, handler2)
 
     // append middleware created with handlerFunc3 and handlerFunc4 with this order
-	// chain will have handler1,handler2,handler3,handler4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.ExtendPreFunc(handlerFunc3, handlerFunc4)
 */
 func (c *Chain) ExtendPreFunc(fs ...http.HandlerFunc) *Chain {
@@ -291,7 +291,7 @@ nil is ignored if contained in the arguments.
     chain := chainist.NewChain(handler1, handler2)
 
     // append middleware created with handlerFunc3 and handlerFunc4 with this order
-	// chain will have handler1,handler2,handler3,handler4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.ExtendPostFunc(handlerFunc3, handlerFunc4)
 */
 func (c *Chain) ExtendPostFunc(fs ...http.HandlerFunc) *Chain {
@@ -312,7 +312,7 @@ If nil is given as the argument, it is ignored.
     // create a middleware chain with handler1 and handler2
     chain := chainist.NewChain(handler1, handler2)
 
-	// set the handler function of handlerFuncAtEdge
+    // set the handler function of handlerFuncAtEdge
     chain.SetHandlerFunc(handlerFuncAtEdge)
 */
 func (c *Chain) SetHandlerFunc(f http.HandlerFunc) *Chain {
@@ -332,7 +332,7 @@ Join joins two chains.
 
     // join two chains
     // this operation extends chain1 with chain2
-	// chain1 will have handler1,handler2,handler3,handler4 with this order
+    // chain1 will have handler1,handler2,handler3,handler4 with this order
     chain1.Join(chain2)
 */
 func (c *Chain) Join(o *Chain) *Chain {
