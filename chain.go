@@ -35,7 +35,6 @@ type Chain struct {
 
 	// HandlerFunc is the http handler function at the edge of the chain.
 	// If it is not set before calling Chain() or ChainFunc(),
-	// an empty handler function is automatically used.
 	HandlerFunc http.HandlerFunc
 }
 
@@ -389,7 +388,9 @@ func (c *Chain) Chain() http.Handler {
 
 /*
 ChainFunc returns a new middleware chain with a handler function.
-If the given handler function is not nil, it is used instead of the handler function set with `SetHandlerFunc()`.
+If the given handler function is not nil, it is used instead of the chain.HandlerFunc which is set with `SetHandlerFunc()`.
+If both given handler function and chain.HandlerFunc are nil, nil value is passed to the middleware. Under that situation,
+your middleware have to be coded to handle nil for the http.Handler given as the middleware's argument.
 
 Usage:
 
