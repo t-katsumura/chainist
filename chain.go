@@ -4,64 +4,100 @@ import (
 	"net/http"
 )
 
-// Define middleware function type.
-type middleware func(h http.Handler) http.Handler
+/*
+Define the "middleware" type.
+Note, this is the commonly used definition of middleware.
 
-// Struct for middleware chain.
+An example of basic definition of middleware is
+
+    func YourMiddleware(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // you can write your code here
+            if next != nil {
+                next.ServeHTTP(w, r)
+            }
+            // you can write your code here
+        })
+    }
+*/
+type Middleware func(h http.Handler) http.Handler
+
+/*
+Chain is the struct for middleware chain.
+This holds the set of some middleware (i.e. func(h http.Handler) http.Handler)
+and a http handler function (i.e. `func(http.ResponseWriter, *http.Request)`)
+*/
 type Chain struct {
-	// fs : middlewars
-	fs []middleware
-	// f : handler function at the edge of the chain
-	f http.HandlerFunc
+	// Middleware is the list of middleware.
+	// This can contain nil values but they are ignored
+	// when getting middleware chains with Chain() or ChainFunc().
+	Middleware []Middleware
+
+	// HandlerFunc is the http handler function at the edge of the chain.
+	// If it is not set before calling Chain() or ChainFunc(),
+	HandlerFunc http.HandlerFunc
 }
 
 /*
-Create a new chain struct.
+NewChain creates a new middleware chain.
 
     chain := chainist.NewChain()
 
-Middleware can be added at the time of creating a Chain struct.
-Middleware must have the signature of `func(h http.Handler) http.Handler`.
-This example creates a new middleware chain of [handler1, handler2, handler3] with this order.
+Middleware can be added at the time of creation of a chain.
+Middleware is a function with the signature of `func(h http.Handler) http.Handler`.
 If nil is contained in the given arguments, nil is returned.
 
-	// handler1 will be called at first, handler3 at last
+    // handler1 is called at first, and handler3 at last
     chain := chainist.NewChain(handler1, handler2, handler3)
 */
-func NewChain(fs ...middleware) *Chain {
-	for _, f := range fs {
-		if f == nil {
-			// it should be better to return an error
+func NewChain(ms ...Middleware) *Chain {
+	for _, m := range ms {
+		if m == nil {
+			// it might be better to return an error
 			return nil
 		}
 	}
 	c := &Chain{
-		fs: fs,
+		Middleware: ms,
 	}
 	return c
 }
 
 /*
 Append middleware at the last of the chain.
-If nil is given as middleware, then the chain will be returned as it is.
+If nil is given, then the chain will be returned without adding it.
 
     chain := chainist.NewChain()
     chain.Append(handler1)
          .Append(handler2)
          .Append(handler3)
 */
-func (c *Chain) Append(f middleware) *Chain {
-	if f == nil {
+func (c *Chain) Append(m Middleware) *Chain {
+	if m == nil {
 		return c
 	}
-	c.fs = append(c.fs, f)
+	c.Middleware = append(c.Middleware, m)
 	return c
 }
 
 /*
-Append handler function as pre-executable function which is executed before invoking succeeding middleware.
+AppendPreFunc appends a http handler function as pre-executable function which is executed before invoking succeeding middleware.
 Handler function must have the signature of `func(w http.ResponseWriter, r *http.Request)`.
 If nil is given as handler function, then the chain will be returned as it is.
+
+If you pass `YourPreHandlerFunc(w http.ResponseWriter, r *http.Request)` as an argument, it is treaded as the middleware of
+
+    func handler(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            YourPreHandlerFunc(w, r)
+            if next != nil {
+                // invoke the next handler function after YourPreHandlerFunc
+                next.ServeHTTP(w, r)
+            }
+        })
+    }
+
+Usage example
 
     chain := chainist.NewChain()
 
@@ -73,14 +109,28 @@ func (c *Chain) AppendPreFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Append(h.PreMiddleware)
 }
 
 /*
-Append handler function as post-executable function which is executed after invoked succeeding middleware.
+AppendPostFunc appends a http handler function as post-executable function which is executed after invoked succeeding middleware.
 Handler function must have the signature of `func(w http.ResponseWriter, r *http.Request)`.
 If nil is given as handler function, then the chain will be returned as it is.
+
+If you pass `YourPostHandlerFunc(w http.ResponseWriter, r *http.Request)` as an argument, it is treaded as the middleware of
+
+    func handler(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            if next != nil {
+                // invoke the next handler function before YourPostHandlerFunc
+                next.ServeHTTP(w, r)
+            }
+            YourPostHandlerFunc(w, r)
+        })
+    }
+
+Usage:
 
     chain := chainist.NewChain()
     chain.AppendPostFunc(handlerFunc1)
@@ -91,35 +141,43 @@ func (c *Chain) AppendPostFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Append(h.PostMiddleware)
 }
 
 /*
-Insert middleware at designated position of the chain.
+Insert inserts middleware at designated position of the chain.
 Middleware must have the signature of `func(h http.Handler) http.Handler`.
-If nil is given as middleware, then the chain will be returned as it is.
+If nil is given as middleware, then the chain will be returned without adding it.
 
+If the number less than 0 is given as the position, given handler is added at the first of the chain.
+If the number grater than the length of middleware is given as the position, given handler is added at the last of the chain.
+
+Usage:
+
+    // create a middleware chain with the order of handler1,handler2,handler3
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handler4 between handler1 and handler2
+    // chain.Middleware[1] will be handler4
     chain.Insert(handler4, 1)
 
     // insert handler5 at the first of the chain
+    // chain.Middleware[0] will be handler4
     chain.Insert(handler5, 0)
 */
-func (c *Chain) Insert(f middleware, i int) *Chain {
-	if f == nil {
+func (c *Chain) Insert(m Middleware, i int) *Chain {
+	if m == nil {
 		return c
 	}
-	if len(c.fs) == 0 || i >= len(c.fs) {
-		c.fs = append(c.fs, f)
+	if len(c.Middleware) == 0 || i >= len(c.Middleware) {
+		c.Middleware = append(c.Middleware, m)
 	} else {
 		if i < 0 {
 			i = 0
 		}
-		c.fs = append(c.fs[:i+1], c.fs[i:]...)
-		c.fs[i] = f
+		c.Middleware = append(c.Middleware[:i+1], c.Middleware[i:]...)
+		c.Middleware[i] = m
 	}
 	return c
 }
@@ -127,69 +185,89 @@ func (c *Chain) Insert(f middleware, i int) *Chain {
 /*
 Insert a pre-executable handler function at designated number of chain.
 Handler function must have the signature of `func(w http.ResponseWriter, r *http.Request)`.
-If nil is given as handler function, the chain will be returned as it is.
+If nil is given as handler function, the chain will be returned without inserting it.
 
+If the number less than 0 is given as the position, given http handler function is added at the first of the chain.
+If the number grater than the length of middleware is given as the position, the given http handler function is added at the last of the chain.
+
+    // create a middleware chain with the order of handler1,handler2,handler3
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handlerFunc4 between handler1 and handler2
+    // chain.Middleware[1] will be a middleware created with handlerFunc4
     chain.InsertPreFunc(handlerFunc4, 1)
 
     // insert handlerFunc5 at the first of the chain
+    // chain.Middleware[0] will be a middleware created with handlerFunc5
     chain.InsertPreFunc(handlerFunc5, 0)
 */
 func (c *Chain) InsertPreFunc(f http.HandlerFunc, i int) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Insert(h.PreMiddleware, i)
 }
 
 /*
 Insert a post-executable handler function at designated number of chain.
 Handler function must have the signature of `func(w http.ResponseWriter, r *http.Request)`.
-If nil is given as handler function, the chain will be returned as it is.
+If nil is given as handler function, the chain will be returned without inserting it.
 
+If the number less than 0 is given as the position, given http handler function is added at the first of the chain.
+If the number grater than the length of middleware is given as the position, the given http handler function is added at the last of the chain.
+
+    // create a middleware chain with the order of handler1,handler2,handler3
     chain := chainist.NewChain(handler1, handler2, handler3)
 
     // insert handlerFunc4 between handler1 and handler2
+    // chain.Middleware[1] will be a middleware created with handlerFunc4
     chain.InsertPostFunc(handlerFunc4, 1)
 
     // insert handlerFunc5 at the first of the chain
+    // chain.Middleware[0] will be a middleware created with handlerFunc5
     chain.InsertPostFunc(handlerFunc5, 0)
 */
 func (c *Chain) InsertPostFunc(f http.HandlerFunc, i int) *Chain {
 	if f == nil {
 		return c
 	}
-	h := &HandlerFuncWrapper{f: f}
+	h := &HandlerFuncWrapper{HandlerFunc: f}
 	return c.Insert(h.PostMiddleware, i)
 }
 
 /*
-Append multiple middleware at a time.
+Extend appends multiple middleware at a time.
 This function append multiple middleware at the end of the chain.
-nil is ignored if contained in the arguments.
+If nil is contained in the arguments, they are ignored.
 
+    // create a middleware chain
     chain := chainist.NewChain(handler1, handler2)
+
+    // append handler3 and handler4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.Extend(handler3, handler4)
 */
-func (c *Chain) Extend(fs ...middleware) *Chain {
-	for _, f := range fs {
-		if f == nil {
+func (c *Chain) Extend(ms ...Middleware) *Chain {
+	for _, m := range ms {
+		if m == nil {
 			continue
 		}
-		c.Append(f)
+		c.Append(m)
 	}
 	return c
 }
 
 /*
-Append multiple pre-executable handler functions at a time.
+ExtendPreFunc appends multiple pre-executable handler functions at a time.
 This function append multiple handler function at the end of the chain.
 nil is ignored if contained in the arguments.
 
+    // create a middleware chain
     chain := chainist.NewChain(handler1, handler2)
+
+    // append middleware created with handlerFunc3 and handlerFunc4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.ExtendPreFunc(handlerFunc3, handlerFunc4)
 */
 func (c *Chain) ExtendPreFunc(fs ...http.HandlerFunc) *Chain {
@@ -197,18 +275,22 @@ func (c *Chain) ExtendPreFunc(fs ...http.HandlerFunc) *Chain {
 		if f == nil {
 			continue
 		}
-		h := &HandlerFuncWrapper{f: f}
+		h := &HandlerFuncWrapper{HandlerFunc: f}
 		c.Append(h.PreMiddleware)
 	}
 	return c
 }
 
 /*
-Append multiple post-executable handler functions at a time.
+ExtendPostFunc appends multiple post-executable handler functions at a time.
 This function append multiple handler function at the end of the chain.
 nil is ignored if contained in the arguments.
 
+    // create a middleware chain
     chain := chainist.NewChain(handler1, handler2)
+
+    // append middleware created with handlerFunc3 and handlerFunc4 with this order
+    // chain will have handler1,handler2,handler3,handler4 with this order
     chain.ExtendPostFunc(handlerFunc3, handlerFunc4)
 */
 func (c *Chain) ExtendPostFunc(fs ...http.HandlerFunc) *Chain {
@@ -216,47 +298,53 @@ func (c *Chain) ExtendPostFunc(fs ...http.HandlerFunc) *Chain {
 		if f == nil {
 			continue
 		}
-		h := &HandlerFuncWrapper{f: f}
+		h := &HandlerFuncWrapper{HandlerFunc: f}
 		c.Append(h.PostMiddleware)
 	}
 	return c
 }
 
 /*
-Set the handler function which will be invoked at the edge of the chain.
-nil is ignored if given as argument.
+SetHandlerFunc sets the handler function which will be invoked at the edge of the chain.
+If nil is given as the argument, it is ignored.
 
+    // create a middleware chain with handler1 and handler2
     chain := chainist.NewChain(handler1, handler2)
+
+    // set the handler function of handlerFuncAtEdge
     chain.SetHandlerFunc(handlerFuncAtEdge)
 */
 func (c *Chain) SetHandlerFunc(f http.HandlerFunc) *Chain {
 	if f == nil {
 		return c
 	}
-	c.f = f
+	c.HandlerFunc = f
 	return c
 }
 
 /*
-Join two chains.
+Join joins two chains.
 
+    // create two chains with handlers.
     chain1 := chainist.NewChain(handler1, handler2)
     chain2 := chainist.NewChain(handler3, handler4)
 
     // join two chains
-    // this operation extends chain1 with the middleware of chain2
+    // this operation extends chain1 with chain2
+    // chain1 will have handler1,handler2,handler3,handler4 with this order
     chain1.Join(chain2)
 */
 func (c *Chain) Join(o *Chain) *Chain {
 	if o == nil {
 		return c
 	}
-	c.fs = append(c.fs, o.fs...)
+	c.Middleware = append(c.Middleware, o.Middleware...)
 	return c
 }
 
 /*
-Get the length of middleware chain.
+Len gets the length of middleware chain.
+This contains the length of Middleware and the Handler Function if it's already set.
 
     chain := chainist.NewChain(handler1, handler2)
     chain.SetHandlerFunc(handlerFuncAtEdge)
@@ -265,16 +353,18 @@ Get the length of middleware chain.
     println(chain.len())
 */
 func (c *Chain) Len() int {
-	length := len(c.fs)
-	if c.f != nil {
+	length := len(c.Middleware)
+	if c.HandlerFunc != nil {
 		length += 1
 	}
 	return length
 }
 
 /*
-Return new middleware chain.
-This function returns nil is no middleware is configured.
+Chain returns a new middleware chain.
+This function returns nil if there is no middleware and no handler function.
+
+Usage:
 
     // defining a middleware chain
     // this create the chain of [handlerFunc1, handlerFunc2, handler1, handler2]
@@ -283,36 +373,26 @@ This function returns nil is no middleware is configured.
     chain.AppendPostFunc(handlerFunc2)
     chain.Extend(handler1, handler2)
 
+    // get a new handler from chain
+    handler := chain.Chain()
+    if handler == nil {
+        panic("handler is nil")
+    }
+
     // run http server
-    http.ListenAndServe(":8080", chain.Chain())
+    http.ListenAndServe(":8080", handler)
 */
 func (c *Chain) Chain() http.Handler {
-
-	n := c.Len()
-
-	// no handlers or handler functions are set in the chain
-	// maybe we should return DefaultServeMux
-	if n < 1 {
-		return nil
-	}
-
-	var h http.Handler
-	if c.f != nil {
-		c.Append((&HandlerFuncWrapper{f: c.f}).Middleware)
-	}
-
-	h = c.fs[n-1](nil)
-	for i := range c.fs[:n-1] {
-		h = c.fs[n-2-i](h)
-	}
-
-	return h
+	return c.ChainFunc(nil)
 }
 
 /*
-Return new middleware chain with a handler function.
-If no handler function at the edge of the chain is set with `SetHandlerFunc()`,
-handler function can be set at the time of generating middleware chain with this method.
+ChainFunc returns a new middleware chain with a handler function.
+If the given handler function is not nil, it is used instead of the chain.HandlerFunc which is set with `SetHandlerFunc()`.
+If both given handler function and chain.HandlerFunc are nil, nil value is passed to the middleware. Under that situation,
+your middleware have to be coded to handle nil for the http.Handler given as the middleware's argument.
+
+Usage:
 
     // defining a middleware chain
     chain := chainist.NewChain()
@@ -320,12 +400,36 @@ handler function can be set at the time of generating middleware chain with this
     chain.AppendPostFunc(handlerFunc2)
     chain.Extend(handler1, handler2)
 
+    // get a new handler from chain
+    handler := chain.ChainFunc(handlerFuncAtEdge)
+    if handler == nil {
+        panic("handler is nil")
+    }
+
     // run http server
-    http.ListenAndServe(":8080", chain.ChainFunc(handlerFuncAtEdge))
+    http.ListenAndServe(":8080", handler)
 */
 func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
+
+	var h http.Handler
 	if f != nil {
-		c.f = f
+		h = f
+	} else if c.HandlerFunc != nil {
+		h = c.HandlerFunc
 	}
-	return c.Chain()
+
+	n := len(c.Middleware)
+	// no handlers or handler functions are set in the chain
+	if h == nil && n < 1 {
+		return nil
+	}
+
+	for i, m := range c.Middleware {
+		if m == nil {
+			continue
+		}
+		h = c.Middleware[n-1-i](h)
+	}
+
+	return h
 }
