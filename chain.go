@@ -384,25 +384,7 @@ Usage:
     http.ListenAndServe(":8080", handler)
 */
 func (c *Chain) Chain() http.Handler {
-
-	n := c.Len()
-
-	// no handlers or handler functions are set in the chain
-	if n < 1 {
-		return nil
-	}
-
-	var h http.Handler
-	if c.HandlerFunc != nil {
-		c.Append((&HandlerFuncWrapper{HandlerFunc: c.HandlerFunc}).Middleware)
-	}
-
-	h = c.Middleware[n-1](nil)
-	for i := range c.Middleware[:n-1] {
-		h = c.Middleware[n-2-i](h)
-	}
-
-	return h
+	return c.ChainFunc(nil)
 }
 
 /*
@@ -427,8 +409,26 @@ Usage:
     http.ListenAndServe(":8080", handler)
 */
 func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
+
+	var h http.Handler
 	if f != nil {
-		c.HandlerFunc = f
+		h = f
+	} else if c.HandlerFunc != nil {
+		h = c.HandlerFunc
 	}
-	return c.Chain()
+
+	n := len(c.Middleware)
+	// no handlers or handler functions are set in the chain
+	if h == nil && n < 1 {
+		return nil
+	}
+
+	for i, m := range c.Middleware {
+		if m == nil {
+			continue
+		}
+		h = c.Middleware[n-1-i](h)
+	}
+
+	return h
 }
