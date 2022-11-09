@@ -7,17 +7,28 @@ import (
 	"net/http/httptest"
 )
 
-func handlerFunc11(w http.ResponseWriter, _ *http.Request) {
+func myHandlerFunc0(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hi from handlerFunc 1!\n"))
+	if _, err := w.Write([]byte("Hi from myHandlerFunc0!\n")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
-func handlerFunc22(w http.ResponseWriter, _ *http.Request) {
+func myHandlerFunc1(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hi from handlerFunc 2!\n"))
+	if _, err := w.Write([]byte("Hi from myHandlerFunc1!\n")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
-func handler11(next http.Handler) http.Handler {
+func myHandlerFunc2(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte("Hi from myHandlerFunc2!\n")); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func myHandler1(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// w.Write([]byte(r.URL.Path + "\n"))
 		// w.Write([]byte(r.URL.RawQuery + "\n"))
@@ -25,7 +36,7 @@ func handler11(next http.Handler) http.Handler {
 		// for key, vs := range v {
 		// 	fmt.Fprintf(w, "%s = %s\n", key, vs[0])
 		// }
-		w.Write([]byte("Hi from handler 1!\n"))
+		w.Write([]byte("Hi from myHandler1!\n"))
 		if next != nil {
 			next.ServeHTTP(w, r)
 
@@ -33,9 +44,9 @@ func handler11(next http.Handler) http.Handler {
 	})
 }
 
-func handler22(next http.Handler) http.Handler {
+func myHandler2(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hi from handler 2!\n"))
+		w.Write([]byte("Hi from myHandler2!\n"))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -46,53 +57,39 @@ func ExampleChain() {
 	chain := NewChain()
 
 	// add handler functions
-	// chain.AppendPreFunc(handlerFunc1)
-	// chain.AppendPostFunc(handlerFunc2)
+	chain.AppendPreFunc(myHandlerFunc1)
+	chain.AppendPostFunc(myHandlerFunc2)
 	// add handlers
-	// chain.Extend(handler11, handler22)
-	chain.SetHandlerFunc(handlerFunc11)
+	chain.Extend(myHandler1, myHandler2)
+	chain.SetHandlerFunc(myHandlerFunc0)
 
-	// Run http server which responds
-	/*
-		Hi from handlerFunc 1!
-		Hi from handler 1!
-		Hi from handler 2!
-		Hi from handlerFunc 2!
-	*/
-	// http.Handle("/", chain.Chain())
-	// println(chain.Len())
+	// Run http server
 	ts := httptest.NewServer(chain.Chain())
 	defer ts.Close()
 
-	req, _ := http.NewRequest(http.MethodGet, ts.URL, nil)
-	resp, _ := (&http.Client{}).Do(req)
-	body, _ := ioutil.ReadAll(resp.Body)
+	req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+	if err != nil {
+		// handle error
+	}
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		// handle error
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// handle error
+	}
+
 	resp.Body.Close()
 	s := string(body)
 	fmt.Println(s)
 
-	// Output: Hi from handlerFunc 1!
-}
-
-func ExampleChain_AppendPreFunc() {
-	// create a new chain struct
-	chain := NewChain()
-
-	// add handler functions
-	chain.AppendPreFunc(handlerFunc1)
-	chain.AppendPostFunc(handlerFunc2)
-	// add handlers
-	chain.Extend(handler11, handler22)
-	chain.SetHandlerFunc(handlerFunc1)
-
-	// Run http server which responds
-	/*
-		Hi from handlerFunc 1!
-		Hi from handler 1!
-		Hi from handler 2!
-		Hi from handlerFunc 2!
-	*/
-	// http.Handle("/", chain.Chain())
-	println(chain.Len())
-	http.ListenAndServe(":8080", chain.Chain())
+	// Output:
+	// Hi from myHandlerFunc1!
+	// Hi from myHandler1!
+	// Hi from myHandler2!
+	// Hi from myHandlerFunc0!
+	// Hi from myHandlerFunc2!
 }
