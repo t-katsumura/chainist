@@ -424,7 +424,7 @@ func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
 		return nil
 	}
 
-	for i, _ := range c.Middleware {
+	for i := range c.Middleware {
 		if c.Middleware[n-1-i] == nil {
 			continue
 		}

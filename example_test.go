@@ -30,13 +30,9 @@ func myHandlerFunc2(w http.ResponseWriter, _ *http.Request) {
 
 func myHandler1(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// w.Write([]byte(r.URL.Path + "\n"))
-		// w.Write([]byte(r.URL.RawQuery + "\n"))
-		// v := r.URL.Query()
-		// for key, vs := range v {
-		// 	fmt.Fprintf(w, "%s = %s\n", key, vs[0])
-		// }
-		w.Write([]byte("Hi from myHandler1!\n"))
+		if _, err := w.Write([]byte("Hi from myHandler1!\n")); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		if next != nil {
 			next.ServeHTTP(w, r)
 
@@ -46,7 +42,9 @@ func myHandler1(next http.Handler) http.Handler {
 
 func myHandler2(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hi from myHandler2!\n"))
+		if _, err := w.Write([]byte("Hi from myHandler2!\n")); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
