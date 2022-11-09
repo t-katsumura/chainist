@@ -424,8 +424,8 @@ func (c *Chain) ChainFunc(f http.HandlerFunc) http.Handler {
 		return nil
 	}
 
-	for i, m := range c.Middleware {
-		if m == nil {
+	for i, _ := range c.Middleware {
+		if c.Middleware[n-1-i] == nil {
 			continue
 		}
 		h = c.Middleware[n-1-i](h)

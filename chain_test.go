@@ -434,6 +434,11 @@ func TestLen(t *testing.T) {
 		c := NewChain().Append(handler1.Middleware).Append(handler2.Middleware)
 		assert.Equal(t, 2, c.Len())
 	}
+	{
+		c := NewChain().Append(handler1.Middleware).Append(handler2.Middleware)
+		c.SetHandlerFunc(handlerFunc1)
+		assert.Equal(t, 3, c.Len())
+	}
 }
 
 func TestChain(t *testing.T) {
@@ -622,6 +627,24 @@ func TestChainFunc(t *testing.T) {
 	}
 	{
 		c := NewChain().AppendPostFunc(handlerFunc2).AppendPostFunc(handlerFunc2)
+		s := httptest.NewServer(c.ChainFunc(handlerFunc1))
+		defer s.Close()
+
+		res, err := http.Get(s.URL)
+		assert.NoError(t, err)
+
+		body, err := ioutil.ReadAll(res.Body)
+		defer res.Body.Close()
+		assert.NoError(t, err)
+
+		assert.Equal(t, 200, res.StatusCode)
+		assert.Equal(t, "f1f2f2", string(body))
+	}
+	{
+		c := &Chain{
+			Middleware: []Middleware{nil},
+		}
+		c.AppendPostFunc(handlerFunc2).AppendPostFunc(handlerFunc2)
 		s := httptest.NewServer(c.ChainFunc(handlerFunc1))
 		defer s.Close()
 
